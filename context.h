@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "bulkmt/bulk_reader.h"
 #include "bulkmt/bulk_processor.h"
 #include "bulkmt/bulk_logger.h"
@@ -10,14 +12,18 @@ class Context
 {
 public:
   explicit Context(size_t bulkSize);
-  ~Context() = default;
+  ~Context();
 
   void recieve(const char* data, size_t size);
 
 private:
+  void worker();
+
   hw10::BulkReader m_reader;
   std::shared_ptr<hw10::BulkLogger> m_logger;
   std::shared_ptr<hw10::BulkProcessor> m_processor;
+  std::stringstream m_stream;
+  std::thread m_thread;
 };
 
 class ContextManager

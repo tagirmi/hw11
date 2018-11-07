@@ -4,6 +4,8 @@
 
 hw11::Context::Context(size_t bulkSize)
   : m_reader{bulkSize}
+  , m_stream{}
+  , m_thread{&Context::worker, this}
 {
   m_processor = std::make_shared<hw10::BulkProcessor>();
   m_logger = std::make_shared<hw10::BulkLogger>();
@@ -12,8 +14,19 @@ hw11::Context::Context(size_t bulkSize)
   m_reader.subscribe(m_logger);
 }
 
+hw11::Context::~Context()
+{
+  m_thread.join();
+}
+
 void hw11::Context::recieve(const char* data, size_t size)
 {
+  m_stream.write(data, size);
+}
+
+void hw11::Context::worker()
+{
+  m_reader.read(m_stream);
 }
 
 hw11::ContextManager::handle_t hw11::ContextManager::createContext(size_t bulk)
