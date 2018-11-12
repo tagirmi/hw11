@@ -2,9 +2,30 @@
 
 #include "context.h"
 
+namespace {
+
+std::vector<std::string> split(std::string& str, char d = '\n')
+{
+  std::vector<std::string> r;
+  r.reserve(std::count(str.cbegin(), str.cend(), d) + 1);
+
+  std::string::size_type start = 0;
+  std::string::size_type stop = str.find_first_of(d);
+  while(stop != std::string::npos) {
+    r.emplace_back(str.substr(start, stop - start));
+    str.erase(start, stop - start);
+
+    start = stop + 1;
+    stop = str.find_first_of(d, start);
+  }
+
+  return r;
+}
+
+} // namespace
+
 hw11::Context::Context(size_t bulkSize)
   : m_reader{bulkSize}
-  , m_stream{}
   , m_thread{&Context::worker, this}
 {
   m_processor = std::make_shared<hw10::BulkProcessor>();
@@ -16,17 +37,48 @@ hw11::Context::Context(size_t bulkSize)
 
 hw11::Context::~Context()
 {
+  m_stop = true;
+  m_ready.notify_one();
+
   m_thread.join();
 }
 
 void hw11::Context::recieve(const char* data, size_t size)
 {
-  m_stream.write(data, size);
+  std::vector<std::string> lines;
+  {
+    m_currentData += std::string{data, size};
+    lines = split(m_currentData);
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(m_linesMutex);
+    m_lines.insert(m_lines.cend(), lines.cbegin(), lines.cend());
+  }
+  m_ready.notify_one();
 }
 
 void hw11::Context::worker()
 {
-  m_reader.read(m_stream);
+  while (true) {
+    std::vector<std::string> lines;
+
+    {
+      std::unique_lock<std::mutex> lock(m_linesMutex);
+      m_ready.wait(lock, [this]() { return !m_lines.empty() || m_stop; });
+
+      if (m_stop && m_lines.empty())
+        break;
+
+      lines = m_lines;
+      m_lines.clear();
+    }
+
+    for (const auto& i : lines)
+      m_reader.addLine(i);
+  }
+
+  m_reader.endLine();
 }
 
 hw11::ContextManager::handle_t hw11::ContextManager::createContext(size_t bulk)
