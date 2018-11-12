@@ -27,11 +27,20 @@ void hw10::BulkReader::subscribe(const std::shared_ptr<hw7::BulkObserver>& obser
 
 void hw10::BulkReader::read(std::istream& is)
 {
-  for (std::string cmd; std::getline(is, cmd);) {
-    m_bulkCollector->add(cmd);
-    m_stats.takeCountOf("lines", 1);
-  }
+  for (std::string cmd; std::getline(is, cmd);)
+    addLine(cmd);
 
+  endLine();
+}
+
+void hw10::BulkReader::addLine(const std::string& line)
+{
+  m_bulkCollector->add(line);
+  m_stats.takeCountOf("lines", 1);
+}
+
+void hw10::BulkReader::endLine()
+{
   m_bulkCollector->endData();
   stop();
 }
