@@ -1,14 +1,31 @@
-cmake_minimum_required(VERSION 3.9)
-project(async)
+cmake_minimum_required(VERSION 3.2)
 
-set(CMAKE_CXX_STANDARD 14)
+if($ENV{TRAVIS_BUILD_NUMBER})
+  set(BUILD $ENV{TRAVIS_BUILD_NUMBER})
+else()
+  set(BUILD 0)
+endif()
 
-add_library(async SHARED async.cpp async.h context.cpp context.h)
+project(async VERSION 1.0.${BUILD})
 
-add_library(bulkmt bulkmt/bulk_reader.cpp bulkmt/bulk_logger.cpp bulkmt/bulk_processor.cpp
-  bulkmt/bulk_collector.cpp bulkmt/stats.cpp)
+find_package(Threads REQUIRED)
+
+add_library(${PROJECT_NAME} SHARED async.cpp async.h context.cpp context.h)
+
+file(GLOB BULKMT_SRC bulkmt/*.cpp bulkmt/*.h)
+
+add_library(bulkmt ${BULKMT_SRC})
 
 add_executable(async_cli main.cpp)
 
-target_link_libraries(async bulkmt)
-target_link_libraries(async_cli async)
+set_target_properties(${PROJECT_NAME} bulkmt async_cli PROPERTIES
+  CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON
+  COMPILE_OPTIONS -Wpedantic -Wall -Wextra
+)
+
+target_link_libraries(${PROJECT_NAME} bulkmt ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(async_cli ${PROJECT_NAME})
+
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(FILES async.h DESTINATION include)
