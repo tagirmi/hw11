@@ -48,10 +48,10 @@ public:
 
   handle_t createContext(size_t bulk);
   void destroyContext(handle_t handle);
-  hw11::Context* findContext(handle_t handle);
+  Context* findContext(handle_t handle);
 
 private:
-  std::list<std::unique_ptr<hw11::Context>> m_storage;
+  std::list<std::unique_ptr<Context>> m_storage;
 };
 
 } // hw11

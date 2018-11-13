@@ -9,14 +9,12 @@ std::vector<std::string> split(std::string& str, char d = '\n')
   std::vector<std::string> r;
   r.reserve(std::count(str.cbegin(), str.cend(), d) + 1);
 
-  std::string::size_type start = 0;
   std::string::size_type stop = str.find_first_of(d);
   while(stop != std::string::npos) {
-    r.emplace_back(str.substr(start, stop - start));
-    str.erase(start, stop - start);
+    r.emplace_back(str.substr(0, stop));
+    str.erase(0, stop + 1);
 
-    start = stop + 1;
-    stop = str.find_first_of(d, start);
+    stop = str.find_first_of(d);
   }
 
   return r;
