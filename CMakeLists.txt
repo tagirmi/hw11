@@ -6,7 +6,7 @@ else()
   set(BUILD 0)
 endif()
 
-project(async VERSION 1.0.${BUILD})
+project(async VERSION 0.0.${BUILD})
 
 find_package(Threads REQUIRED)
 
