@@ -27,7 +27,8 @@ private:
   std::atomic<bool> m_stop{false};
   std::condition_variable m_ready;
 
-  std::string m_currentData;//TODO + mutex?
+  std::string m_currentData;
+  std::mutex m_currentDataMutex;
 };
 
 class ContextManager
@@ -42,8 +43,8 @@ public:
 
   static ContextManager& instance()
   {
-    static ContextManager pool;
-    return pool;
+    static ContextManager manager;
+    return manager;
   }
 
   handle_t createContext(size_t bulk);
@@ -52,6 +53,7 @@ public:
 
 private:
   std::list<std::unique_ptr<Context>> m_storage;
+  std::mutex m_mutex;
 };
 
 } // hw11

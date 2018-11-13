@@ -44,7 +44,9 @@ hw11::Context::~Context()
 void hw11::Context::recieve(const char* data, size_t size)
 {
   std::vector<std::string> lines;
+
   {
+    std::lock_guard<std::mutex> lock(m_currentDataMutex);
     m_currentData += std::string{data, size};
     lines = split(m_currentData);
   }
@@ -83,25 +85,36 @@ hw11::ContextManager::handle_t hw11::ContextManager::createContext(size_t bulk)
 {
   auto context = std::make_unique<Context>(bulk);
   handle_t handle = context.get();
-  m_storage.emplace_back(std::move(context));
+
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_storage.emplace_back(std::move(context));
+  }
+
   return handle;
 }
 
 void hw11::ContextManager::destroyContext(handle_t handle)
 {
-  m_storage.remove_if([handle](auto& context){
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_storage.remove_if([handle](auto& context) {
     return context.get() == handle;
   });
 }
 
 hw11::Context* hw11::ContextManager::findContext(handle_t handle)
 {
-  auto context = std::find_if(m_storage.begin(), m_storage.end(),
-                              [handle](auto& context){
-    return context.get() == handle;
-  });
-  if (context == m_storage.end())
-    return nullptr;
+  Context* context = nullptr;
 
-  return context->get();
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto iter = std::find_if(m_storage.begin(), m_storage.end(), [handle](auto& context){
+      return context.get() == handle;
+    });
+
+    if (iter != m_storage.end())
+      context = iter->get();
+  }
+
+  return context;
 }
