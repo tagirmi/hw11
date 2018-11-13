@@ -11,10 +11,12 @@ project(async VERSION 1.0.${BUILD})
 find_package(Threads REQUIRED)
 
 add_library(async SHARED async.cpp async.h context.cpp context.h)
+set_property(TARGET bulkmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 file(GLOB BULKMT_SRC bulkmt/*.cpp bulkmt/*.h)
 
 add_library(bulkmt ${BULKMT_SRC})
+set_property(TARGET bulkmt PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_executable(async_cli main.cpp)
 
